@@ -28,8 +28,7 @@ Two identical flat lists — one for movies, one for TV shows — ordered by dat
 
 ## Commands
 
-(Once scaffolded — standard Vite scripts.)
-
 - `npm run dev` — dev server
-- `npm run build` — production build
-- `npm run test` — Vitest
+- `npm run build` — typecheck (`tsc -b`) + production build
+- `npm run test` — Vitest (db tests run against fake-indexeddb)
+- `npm run lint` — oxlint
