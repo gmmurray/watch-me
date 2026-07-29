@@ -14,6 +14,7 @@ Two identical flat lists — one for movies, one for TV shows — ordered by dat
 - Dexie (IndexedDB) + `dexie-react-hooks` for all list data; `localStorage` only for trivial UI prefs
 - vite-plugin-pwa for manifest/service worker
 - Plain CSS with custom properties; theming via `data-mode` attribute on the root element
+- `react-icons` (feather set) for icons; `@fontsource/limelight` self-hosted display font (brand/header only)
 - Vitest for logic tests
 
 ## Conventions & constraints

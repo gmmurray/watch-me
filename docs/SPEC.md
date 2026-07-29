@@ -42,7 +42,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ### The list
 
 - One vertical list per mode. Each row shows: poster thumbnail, title, year, tags, and the date added.
-- Default order: oldest first (top). A single sort control flips to newest first. The chosen direction is remembered per mode.
+- Default order: oldest first (top). A compact Oldest/Newest segmented toggle flips the direction; the choice is remembered per mode.
 - Tapping a row opens a small detail panel/sheet: larger poster, overview from TMDB, tags (editable), date added, and two actions: **Mark watched** (the primary action — crosses it off) and **Remove** (for "changed my mind, never watching this"; hard delete).
 - Both actions get a brief undo affordance (toast).
 
@@ -58,6 +58,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 - A prominent **Add** button opens a search input.
 - Search hits TMDB (`/search/movie` or `/search/tv` depending on the current mode) with debounced-as-you-type results showing poster, title, year.
 - Selecting a result adds it to the current mode's list with `dateAdded = now`. Duplicate adds (same TMDB id in the same mode) are prevented with a gentle notice.
+- Adding keeps the search sheet open — batch adding is the primary flow; the sheet is dismissed manually when done.
 - Optional: add tags immediately after adding, or later from the detail panel.
 
 ### Tags
