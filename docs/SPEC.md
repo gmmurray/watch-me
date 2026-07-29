@@ -27,16 +27,17 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 
 ### Sections and theming
 
-- Dark-mode app. Two modes: **Movie mode** (red accent) and **Show mode** (blue accent).
+- Dark-mode app. Two modes: **Movie mode** (amber-orange accent) and **Show mode** (cyan accent).
 - The accent color is the mode indicator — it should be subtle but unmistakable (accent on the active tab, buttons, tag chips, highlights). Layout and behavior are identical between modes.
 - Mode is switched with a persistent top-level control (tabs or a toggle in the header). The last-used mode is remembered across launches.
 - Implementation: a `data-mode="movie" | "show"` attribute on the root element swaps a small set of CSS custom properties. No per-mode components.
 
-**Aesthetic direction — "movie theater glow."** The target is the feeling of a dark theater lit by the screen: near-black backgrounds (not pure `#000` — a deep warm charcoal), with the mode accent rendered as *light*, not paint. Concretely:
+**Aesthetic direction — "grid glow" (Tron Legacy-inspired).** The target is the Grid at night: a cold blue-black world where light is information. Movie mode wears the program amber-orange; show mode wears the hero cyan. Concretely:
 
-- The accent glows: soft `box-shadow`/`text-shadow` halos on the active tab, the Add button, and focused elements — like neon signage or a marquee. Glow is reserved for a few focal elements; body text, rows, and chips stay quiet so the effect reads as ambiance, not decoration.
-- Poster thumbnails are the brightest things on screen (they're the "screens" in the theater); a subtle ambient glow or reflection under them is welcome if it stays cheap.
-- One display-ish font for the app title/header is allowed for character; everything else uses a clean system/sans stack.
+- Near-black backgrounds with a cool blue bias (not pure `#000`), carrying a very faint mode-tinted grid pattern and a soft halo at the top of the page.
+- The accent is rendered as *light*, not paint: glowing text for the wordmark, thin accent borders with outer glow as "light lines" on focal elements (the Add button, primary actions, active states). Glow is reserved for a few focal elements; body text, rows, and chips stay quiet so the effect reads as ambiance, not decoration.
+- Angular shape language: small radii (4–10px) instead of pills — light lines trace edges, they don't balloon.
+- One display font (Orbitron) for the wordmark only; everything else uses a clean system/sans stack.
 - Calibration guardrails: the app must never feel like a template with default grays (failure mode A), and never accumulate gradients, animations, and effects that feel like overkill for a flat list (failure mode B). If an effect doesn't survive the question "does this make the list nicer to glance at on a phone at night," cut it.
 
 ### The list

@@ -1,29 +1,31 @@
-/* --- movie theater glow: theme tokens --- */
+/* --- grid glow (Tron Legacy-inspired): theme tokens --- */
 
 :root {
   color-scheme: dark;
 
-  --font-display: 'Limelight', Georgia, serif;
+  --font-display: 'Orbitron', 'Segoe UI', system-ui, sans-serif;
 
-  --bg: #100d12;
-  --surface: #1a161d;
-  --surface-raised: #221d26;
-  --border: #2e2733;
-  --text: #ece7ef;
-  --muted: #9a8fa3;
+  --bg: #05080c;
+  --surface: #0b1219;
+  --surface-raised: #101a24;
+  --border: #1c2936;
+  --text: #dbe9f2;
+  --muted: #7f93a4;
 
-  /* movie mode is the default; [data-mode] swaps these */
-  --accent: #ff4d4d;
-  --accent-dim: #b33636;
-  --glow: rgba(255, 77, 77, 0.35);
-  --glow-faint: rgba(255, 77, 77, 0.12);
+  /* movie mode is the default (program amber); [data-mode] swaps these */
+  --accent: #ffa64d;
+  --accent-dim: #a8651f;
+  --glow: rgba(255, 166, 77, 0.35);
+  --glow-faint: rgba(255, 166, 77, 0.1);
+  --grid-line: rgba(255, 166, 77, 0.05);
 }
 
 :root[data-mode='show'] {
-  --accent: #4d9fff;
-  --accent-dim: #366fb3;
-  --glow: rgba(77, 159, 255, 0.35);
-  --glow-faint: rgba(77, 159, 255, 0.12);
+  --accent: #5fd9ff;
+  --accent-dim: #2e7fa0;
+  --glow: rgba(95, 217, 255, 0.35);
+  --glow-faint: rgba(95, 217, 255, 0.1);
+  --grid-line: rgba(95, 217, 255, 0.05);
 }
 
 * {
@@ -37,7 +39,23 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--bg);
+  background:
+    radial-gradient(120% 50% at 50% 0%, var(--glow-faint), transparent 60%),
+    repeating-linear-gradient(
+      0deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 44px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--grid-line) 0,
+      var(--grid-line) 1px,
+      transparent 1px,
+      transparent 44px
+    ),
+    var(--bg);
   color: var(--text);
   font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -95,9 +113,9 @@ a {
 .brand {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.45rem;
-  font-weight: 400;
-  letter-spacing: 0.1em;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
   color: var(--accent);
   text-shadow:
     0 0 10px var(--glow),
@@ -111,12 +129,12 @@ a {
   padding: 0.25rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 8px;
 }
 
 .tab {
   padding: 0.4rem 1.25rem;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--muted);
   transition: color 200ms ease, background 200ms ease, box-shadow 300ms ease;
 }
@@ -135,7 +153,7 @@ a {
   justify-content: center;
   color: var(--muted);
   padding: 0.4rem;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .icon-btn:active {
@@ -151,7 +169,7 @@ a {
   padding: 0.6rem 0.5rem 0.6rem 0.9rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--muted);
   font-size: 0.85rem;
 }
@@ -169,7 +187,7 @@ a {
 
 .pill {
   padding: 0.3rem 0.85rem;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
@@ -187,7 +205,7 @@ a {
   display: flex;
   padding: 2px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--surface);
 }
 
@@ -195,7 +213,7 @@ a {
    mode-level controls (tabs, watched pill), not list plumbing */
 .seg-btn {
   padding: 0.25rem 0.8rem;
-  border-radius: 999px;
+  border-radius: 4px;
   color: var(--muted);
   font-size: 0.85rem;
   transition: color 200ms ease, background 200ms ease;
@@ -237,7 +255,7 @@ a {
   width: 48px;
   height: 72px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 3px;
   background: var(--surface-raised);
   flex-shrink: 0;
 }
@@ -248,7 +266,7 @@ a {
   justify-content: center;
   color: var(--muted);
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .row-main {
@@ -310,7 +328,7 @@ a {
 
 .tag {
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 4px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
@@ -325,29 +343,31 @@ a {
   padding: 4rem 1rem;
 }
 
-/* --- add button (the marquee light) --- */
+/* --- add button (the identity disc) --- */
 
 .fab {
   position: fixed;
   left: 50%;
   bottom: calc(1.5rem + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--bg);
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow:
     0 0 18px var(--glow),
-    0 0 48px var(--glow-faint);
-  transition: background 300ms ease, box-shadow 300ms ease;
+    inset 0 0 10px var(--glow-faint);
+  transition: border-color 300ms ease, color 300ms ease, box-shadow 300ms ease;
 }
 
 .fab:active {
-  background: var(--accent-dim);
+  border-color: var(--accent-dim);
+  color: var(--accent-dim);
 }
 
 /* --- sheets --- */
@@ -355,7 +375,7 @@ a {
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.65);
   z-index: 10;
   opacity: 0;
   visibility: hidden;
@@ -381,8 +401,9 @@ a {
   overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--border);
+  border-top-color: var(--accent-dim);
   border-bottom: none;
-  border-radius: 18px 18px 0 0;
+  border-radius: 12px 12px 0 0;
   padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
   transform: translateY(100%);
   transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -418,7 +439,7 @@ a {
 .search-input {
   width: 100%;
   padding: 0.6rem 0.9rem;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-raised);
   color: var(--text);
@@ -448,7 +469,7 @@ a {
 
 .detail-poster {
   width: 96px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--surface-raised);
 }
 
@@ -481,16 +502,19 @@ a {
 
 .btn-primary {
   padding: 0.55rem 1.3rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--bg);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
   font-weight: 600;
-  box-shadow: 0 0 14px var(--glow-faint);
-  transition: background 200ms ease;
+  box-shadow:
+    0 0 14px var(--glow-faint),
+    inset 0 0 8px var(--glow-faint);
+  transition: border-color 200ms ease, color 200ms ease;
 }
 
 .btn-primary:active {
-  background: var(--accent-dim);
+  border-color: var(--accent);
 }
 
 .btn-quiet {
@@ -528,14 +552,15 @@ a {
 }
 
 .tag-remove {
+  display: inline-flex;
+  align-items: center;
   color: var(--muted);
-  font-size: 0.7rem;
 }
 
 .tag-input {
   width: 100%;
   padding: 0.45rem 0.75rem;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--surface-raised);
   color: var(--text);
@@ -595,7 +620,7 @@ a {
   padding: 0.6rem 1rem;
   background: var(--surface-raised);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
   font-size: 0.9rem;
   z-index: 20;

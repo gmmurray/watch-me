@@ -6,7 +6,7 @@ Personal movie & TV watchlist PWA. Single user, no auth, no backend, all data on
 
 ## What this is (one paragraph)
 
-Two identical flat lists — one for movies, one for TV shows — ordered by date added (oldest first, flippable). Items are added via TMDB search and carry snapshotted metadata. Lightweight freeform tags. Dark "movie theater glow" UI: near-black background, red accent in movie mode, blue in show mode, accent rendered as light (subtle glow on focal elements only). Items are **crossed off** when watched (kept with a `watchedAt` timestamp in a plain per-mode Watched list), not deleted; ratings/reviews/diary stay on Letterboxd.
+Two identical flat lists — one for movies, one for TV shows — ordered by date added (oldest first, flippable). Items are added via TMDB search and carry snapshotted metadata. Lightweight freeform tags. Dark "grid glow" (Tron Legacy-inspired) UI: cold blue-black background with a faint grid, amber-orange accent in movie mode, cyan in show mode, accent rendered as light (thin glowing borders and text on focal elements only, angular radii). Items are **crossed off** when watched (kept with a `watchedAt` timestamp in a plain per-mode Watched list), not deleted; ratings/reviews/diary stay on Letterboxd.
 
 ## Stack
 
@@ -14,7 +14,7 @@ Two identical flat lists — one for movies, one for TV shows — ordered by dat
 - Dexie (IndexedDB) + `dexie-react-hooks` for all list data; `localStorage` only for trivial UI prefs
 - vite-plugin-pwa for manifest/service worker
 - Plain CSS with custom properties; theming via `data-mode` attribute on the root element
-- `react-icons` (feather set) for icons; `@fontsource/limelight` self-hosted display font (brand/header only)
+- `react-icons` (feather set) for icons; `@fontsource/orbitron` self-hosted display font (brand/header only)
 - Vitest for logic tests
 
 ## Conventions & constraints
