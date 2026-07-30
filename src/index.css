@@ -413,6 +413,26 @@ a {
   transform: translateY(0);
 }
 
+.sheet-full {
+  height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+.sheet-full .sheet-header,
+.sheet-full .search-input {
+  flex-shrink: 0;
+}
+
+.sheet-full .list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+
 .sheet-header {
   display: flex;
   align-items: center;

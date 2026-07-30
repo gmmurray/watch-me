@@ -101,7 +101,7 @@ export function SearchSheet({ open, mode, onClose, toast }: SearchSheetProps) {
   const noun = mode === 'movie' ? 'movies' : 'shows'
 
   return (
-    <Sheet open={open} title={`Add ${noun}`} onClose={onClose}>
+    <Sheet open={open} title={`Add ${noun}`} onClose={onClose} fullHeight>
       {!hasToken ? (
         <p className="sheet-note">
           No TMDB token configured. Copy <code>.env.example</code> to{' '}

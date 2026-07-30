@@ -6,9 +6,16 @@ interface SheetProps {
   title: string
   onClose: () => void
   children: ReactNode
+  fullHeight?: boolean
 }
 
-export function Sheet({ open, title, onClose, children }: SheetProps) {
+export function Sheet({
+  open,
+  title,
+  onClose,
+  children,
+  fullHeight,
+}: SheetProps) {
   return (
     <div
       className={open ? 'sheet-backdrop open' : 'sheet-backdrop'}
@@ -16,7 +23,7 @@ export function Sheet({ open, title, onClose, children }: SheetProps) {
       onClick={onClose}
     >
       <div
-        className="sheet"
+        className={fullHeight ? 'sheet sheet-full' : 'sheet'}
         role="dialog"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
