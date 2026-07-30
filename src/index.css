@@ -456,9 +456,13 @@ a {
 
 /* --- search --- */
 
+.search-input-wrap {
+  position: relative;
+}
+
 .search-input {
   width: 100%;
-  padding: 0.6rem 0.9rem;
+  padding: 0.6rem 2.2rem 0.6rem 0.9rem;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-raised);
@@ -471,6 +475,29 @@ a {
 .search-input:focus {
   border-color: var(--accent-dim);
   box-shadow: 0 0 12px var(--glow-faint);
+}
+
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  padding: 0.35rem;
+  border-radius: 6px;
+}
+
+.search-clear:active {
+  color: var(--text);
 }
 
 /* --- detail sheet --- */

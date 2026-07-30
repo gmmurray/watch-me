@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiCheck, FiPlus } from 'react-icons/fi'
+import { FiCheck, FiPlus, FiX } from 'react-icons/fi'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addItem, db, unmarkWatched, type MediaType } from '../db'
 import { formatDate } from '../format'
@@ -109,14 +109,29 @@ export function SearchSheet({ open, mode, onClose, toast }: SearchSheetProps) {
         </p>
       ) : (
         <>
-          <input
-            ref={inputRef}
-            className="search-input"
-            type="search"
-            placeholder={`Search ${noun}…`}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <div className="search-input-wrap">
+            <input
+              ref={inputRef}
+              className="search-input"
+              type="search"
+              placeholder={`Search ${noun}…`}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button
+                type="button"
+                className="search-clear"
+                aria-label="Clear search"
+                onClick={() => {
+                  setQuery('')
+                  inputRef.current?.focus()
+                }}
+              >
+                <FiX size={16} />
+              </button>
+            )}
+          </div>
           {status === 'error' && (
             <p className="sheet-note">Search failed — check your connection.</p>
           )}
