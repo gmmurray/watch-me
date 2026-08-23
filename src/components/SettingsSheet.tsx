@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { exportData, importData } from '../backup'
+import type { MediaType, OrderMode } from '../db'
 import { formatDate } from '../format'
 import { isStandalone } from '../platform'
 import type { ToastFn } from '../toast'
@@ -9,11 +10,24 @@ const LAST_EXPORT_KEY = 'watch-me:last-export'
 
 interface SettingsSheetProps {
   open: boolean
+  orderModes: Record<MediaType, OrderMode>
+  onOrderModeChange: (mediaType: MediaType, next: OrderMode) => void
   onClose: () => void
   toast: ToastFn
 }
 
-export function SettingsSheet({ open, onClose, toast }: SettingsSheetProps) {
+const LISTS: { mediaType: MediaType; label: string }[] = [
+  { mediaType: 'movie', label: 'Movies' },
+  { mediaType: 'show', label: 'Shows' },
+]
+
+export function SettingsSheet({
+  open,
+  orderModes,
+  onOrderModeChange,
+  onClose,
+  toast,
+}: SettingsSheetProps) {
   const [persisted, setPersisted] = useState<boolean | null>(null)
   const [lastExport, setLastExport] = useState<number | null>(() => {
     const raw = localStorage.getItem(LAST_EXPORT_KEY)
@@ -73,6 +87,40 @@ export function SettingsSheet({ open, onClose, toast }: SettingsSheetProps) {
             </p>
           </section>
         )}
+        <section>
+          <h3>List order</h3>
+          <p className="settings-hint">
+            A custom order is rearranged with the Sort button above the list.
+            New items are added to the bottom.
+          </p>
+          {LISTS.map(({ mediaType, label }) => (
+            <div className="settings-row" key={mediaType}>
+              <span>{label}</span>
+              <div className="seg" role="group" aria-label={`${label} order`}>
+                <button
+                  className={
+                    orderModes[mediaType] === 'added'
+                      ? 'seg-btn active'
+                      : 'seg-btn'
+                  }
+                  onClick={() => onOrderModeChange(mediaType, 'added')}
+                >
+                  Date added
+                </button>
+                <button
+                  className={
+                    orderModes[mediaType] === 'custom'
+                      ? 'seg-btn active'
+                      : 'seg-btn'
+                  }
+                  onClick={() => onOrderModeChange(mediaType, 'custom')}
+                >
+                  Custom
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
         <section>
           <h3>Backup</h3>
           <p className="settings-hint">

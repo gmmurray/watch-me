@@ -9,7 +9,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ## Goals
 
 - Two sections with identical behavior: **Movies** and **Shows**.
-- Each section is a flat, chronological list ordered by the date the item was added. Oldest at the top by default, with a simple control to flip the direction.
+- Each section is a flat, chronological list ordered by the date the item was added. Oldest at the top by default, with a simple control to flip the direction. A list can be switched to a manual **custom order** instead (see Ordering).
 - Add items by searching TMDB, so entries carry real metadata (title, year, poster) instead of hand-typed text.
 - Lightweight freeform tagging (e.g. tag a show `anime`). No tag management UI beyond what's needed to add/remove tags on an item.
 - **Cross items off** when watched rather than deleting them. Watched items are kept with a watched timestamp — effectively a plain list of "what I finished and when." Letterboxd stays the real diary, but this data is free to keep and may be useful later.
@@ -19,7 +19,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ## Non-goals (for now)
 
 - No diary, ratings, or reviews — that's Letterboxd. watch-me keeps only the bare "crossed off on this date" record, with no ambition beyond that for now.
-- No additional views, filtering, or sorting beyond the date-added flip. Tags are stored and displayed but not yet filterable (that's the obvious first future feature).
+- No additional views or filtering. Ordering is limited to the date-added flip and an opt-in manual custom order — no sorting by title, year, or anything else. Tags are stored and displayed but not yet filterable (that's the obvious first future feature).
 - No sync across devices, no accounts, no backend.
 - No episode-level tracking for shows. A show is a single list entry.
 
@@ -43,9 +43,24 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ### The list
 
 - One vertical list per mode. Each row shows: poster thumbnail, title, year, tags, and the date added.
-- Default order: oldest first (top). A compact Oldest/Newest segmented toggle flips the direction; the choice is remembered per mode.
+- Default order: oldest first (top). A compact Oldest/Newest segmented toggle flips the direction; the choice is remembered per mode. (In custom order mode this toggle is replaced by the Sort button — see Ordering.)
 - Tapping a row opens a small detail panel/sheet: larger poster, overview from TMDB, tags (editable), date added, and two actions: **Mark watched** (the primary action — crosses it off) and **Remove** (for "changed my mind, never watching this"; hard delete).
 - Both actions get a brief undo affordance (toast).
+
+### Ordering
+
+Each list has an **order mode**, chosen independently for movies and shows on the settings screen:
+
+- **Date added** (default) — the behavior above: chronological, with the Oldest/Newest flip.
+- **Custom** — a manual order arranged by hand. New items are appended to the bottom. The Oldest/Newest flip does not apply; a custom order is absolute, so top is top.
+
+Rearranging is deliberately low-tech — no drag-and-drop library, which on a phone would be a lot of machinery for a list that gets reordered a few times a year. In custom mode the Oldest/Newest control is replaced by a **Sort** button; tapping it puts the list into *sort mode*:
+
+- Rows collapse to title-only, with a pair of up/down arrow buttons side by side on the right (one vertical band, not stacked). The first row's up and the last row's down are disabled.
+- Rows are not tappable — no detail sheet, no adding while rearranging.
+- Moves are staged, not live. The Sort button becomes **Save** and commits the arrangement; a quiet Cancel discards it. Leaving the list (switching mode, or opening the Watched list) also discards a pending arrangement.
+
+The custom position lives on the item itself rather than in a separate list of ids, so it rides along in export/import, and an item that is crossed off and later un-crossed returns to the slot it had.
 
 ### Watched items
 
@@ -84,13 +99,15 @@ interface WatchItem {
   tags: string[];
   addedAt: number;          // epoch ms
   watchedAt: number | null; // epoch ms; null = still on the to-watch list
+  order: number;            // sort key for custom order mode; seeded from addedAt
 }
 ```
 
-- Indexes: `[mediaType+addedAt]` for the to-watch query, `[mediaType+watchedAt]` for the watched list, `[mediaType+tmdbId]` (unique) for duplicate prevention. (Filtering `watchedAt === null` happens in the query; the list sizes involved make index subtleties irrelevant.)
+- Indexes: `[mediaType+addedAt]` for the to-watch query, `[mediaType+order]` for the same query in custom order mode, `[mediaType+watchedAt]` for the watched list, `[mediaType+tmdbId]` (unique) for duplicate prevention. (Filtering `watchedAt === null` happens in the query; the list sizes involved make index subtleties irrelevant.)
 - Re-adding a title that's already in the Watched list should surface it ("you watched this on …") and offer to move it back to the to-watch list rather than creating a duplicate.
 - TMDB metadata is snapshotted at add time; no background refresh. Poster images are loaded from TMDB's CDN at render time (and cached by the service worker).
-- Settings (last mode, sort direction per mode) live in `localStorage` — they're trivial and non-critical.
+- New items take `order = max(order in that mediaType) + 1`, so they land at the bottom of a custom order. Saving an arrangement rewrites the whole list's `order` as dense `0..n-1` in one transaction; the lists are small enough that anything cleverer (fractional keys, gap indices) would be wasted complexity.
+- Settings (last mode, sort direction per mode, order mode per mode) live in `localStorage` — they're trivial and non-critical. The custom order itself is *not* a setting; it's data, and lives in the database.
 
 ## Persistence and data safety
 
@@ -125,7 +142,7 @@ This is the "phone deletes my data after a month" concern — and on iOS it is a
 - "Where to watch" providers via TMDB's watch-provider endpoint.
 - A "cross off automatically" helper that checks Letterboxd exports against the to-watch lists.
 - Doing something with the watched history (counts, a year-in-review, export to Letterboxd format) — the data is being kept precisely so this stays possible.
-- Reordering / pinning items.
+- Pinning individual items to the top of a list.
 - Sync via a tiny backend or file-based sync, if a second device ever matters.
 
 ## Open questions

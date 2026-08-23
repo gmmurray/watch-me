@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { FiPlus, FiSettings, FiX } from "react-icons/fi";
 import { useLiveQuery } from "dexie-react-hooks";
-import { listToWatch, listWatched, type MediaType } from "./db";
+import {
+  listToWatch,
+  listWatched,
+  saveOrder,
+  type MediaType,
+  type OrderMode,
+  type WatchItem,
+} from "./db";
 import type { ToastAction, ToastState } from "./toast";
 import { ItemList } from "./components/ItemList";
+import { ReorderList, type MoveDirection } from "./components/ReorderList";
 import { SearchSheet } from "./components/SearchSheet";
 import { DetailSheet } from "./components/DetailSheet";
 import { SettingsSheet } from "./components/SettingsSheet";
@@ -11,6 +19,7 @@ import { isStandalone } from "./platform";
 
 const MODE_KEY = "watch-me:mode";
 const SORT_KEY = (mode: MediaType) => `watch-me:sort:${mode}`;
+const ORDER_KEY = (mode: MediaType) => `watch-me:order:${mode}`;
 
 type View = "queue" | "watched";
 type SortDir = "asc" | "desc";
@@ -23,10 +32,23 @@ function loadSort(mode: MediaType): SortDir {
   return localStorage.getItem(SORT_KEY(mode)) === "desc" ? "desc" : "asc";
 }
 
+function loadOrderMode(mode: MediaType): OrderMode {
+  return localStorage.getItem(ORDER_KEY(mode)) === "custom" ? "custom" : "added";
+}
+
+function loadOrderModes(): Record<MediaType, OrderMode> {
+  return { movie: loadOrderMode("movie"), show: loadOrderMode("show") };
+}
+
 export default function App() {
   const [mode, setMode] = useState<MediaType>(loadMode);
   const [view, setView] = useState<View>("queue");
   const [sort, setSort] = useState<SortDir>(() => loadSort(loadMode()));
+  const [orderModes, setOrderModes] =
+    useState<Record<MediaType, OrderMode>>(loadOrderModes);
+  // Non-null while the list is being rearranged: a staged copy that only
+  // reaches the database on Save.
+  const [draft, setDraft] = useState<WatchItem[] | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -46,6 +68,7 @@ export default function App() {
     setMode(next);
     setView("queue");
     setSort(loadSort(next));
+    setDraft(null);
     setDetailOpen(false);
     setSearchOpen(false);
   }
@@ -53,6 +76,30 @@ export default function App() {
   function setSortDir(next: SortDir) {
     setSort(next);
     localStorage.setItem(SORT_KEY(mode), next);
+  }
+
+  function setOrderMode(target: MediaType, next: OrderMode) {
+    localStorage.setItem(ORDER_KEY(target), next);
+    setOrderModes((current) => ({ ...current, [target]: next }));
+    if (target === mode) setDraft(null);
+  }
+
+  function moveDraft(index: number, direction: MoveDirection) {
+    setDraft((current) => {
+      if (!current) return current;
+      const to = direction === "up" ? index - 1 : index + 1;
+      if (to < 0 || to >= current.length) return current;
+      const next = [...current];
+      [next[index], next[to]] = [next[to], next[index]];
+      return next;
+    });
+  }
+
+  async function commitDraft() {
+    if (!draft) return;
+    await saveOrder(draft.map((item) => item.id));
+    setDraft(null);
+    showToast("Order saved");
   }
 
   function showToast(message: string, action?: ToastAction) {
@@ -66,16 +113,21 @@ export default function App() {
     setInstallNudgeDismissed(true);
   }
 
-  const queue = useLiveQuery(() => listToWatch(mode), [mode]);
+  const orderMode = orderModes[mode];
+  const queue = useLiveQuery(
+    () => listToWatch(mode, orderMode),
+    [mode, orderMode],
+  );
   const watched = useLiveQuery(() => listWatched(mode), [mode]);
 
   const items =
     view === "queue"
-      ? sort === "desc"
+      ? sort === "desc" && orderMode === "added"
         ? [...(queue ?? [])].reverse()
         : (queue ?? [])
       : (watched ?? []);
 
+  const sorting = draft !== null;
   const noun = mode === "movie" ? "movies" : "shows";
 
   return (
@@ -124,32 +176,55 @@ export default function App() {
       )}
 
       <div className="controls">
-        <button
-          className={view === "watched" ? "pill active" : "pill"}
-          onClick={() => setView(view === "queue" ? "watched" : "queue")}
-        >
-          Watched{watched?.length ? ` · ${watched.length}` : ""}
-        </button>
-        {view === "queue" && (
-          <div className="seg" role="group" aria-label="Sort order">
-            <button
-              className={sort === "asc" ? "seg-btn active" : "seg-btn"}
-              onClick={() => setSortDir("asc")}
-            >
-              Oldest
-            </button>
-            <button
-              className={sort === "desc" ? "seg-btn active" : "seg-btn"}
-              onClick={() => setSortDir("desc")}
-            >
-              Newest
-            </button>
-          </div>
+        {!sorting && (
+          <button
+            className={view === "watched" ? "pill active" : "pill"}
+            onClick={() => setView(view === "queue" ? "watched" : "queue")}
+          >
+            Watched{watched?.length ? ` · ${watched.length}` : ""}
+          </button>
         )}
+        {view === "queue" &&
+          (orderMode === "added" ? (
+            <div className="seg" role="group" aria-label="Sort order">
+              <button
+                className={sort === "asc" ? "seg-btn active" : "seg-btn"}
+                onClick={() => setSortDir("asc")}
+              >
+                Oldest
+              </button>
+              <button
+                className={sort === "desc" ? "seg-btn active" : "seg-btn"}
+                onClick={() => setSortDir("desc")}
+              >
+                Newest
+              </button>
+            </div>
+          ) : sorting ? (
+            <>
+              <button
+                className="pill active"
+                onClick={() => void commitDraft()}
+              >
+                Save
+              </button>
+              <button className="pill" onClick={() => setDraft(null)}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            items.length > 1 && (
+              <button className="pill" onClick={() => setDraft(items)}>
+                Sort
+              </button>
+            )
+          ))}
       </div>
 
       <main>
-        {items.length === 0 ? (
+        {draft ? (
+          <ReorderList items={draft} onMove={moveDraft} />
+        ) : items.length === 0 ? (
           <div className="empty">
             {view === "queue" ? (
               <p>Nothing on the grid yet — add some {noun}.</p>
@@ -168,13 +243,15 @@ export default function App() {
         )}
       </main>
 
-      <button
-        className="fab"
-        aria-label={`Add ${noun}`}
-        onClick={() => setSearchOpen(true)}
-      >
-        <FiPlus size={26} />
-      </button>
+      {!sorting && (
+        <button
+          className="fab"
+          aria-label={`Add ${noun}`}
+          onClick={() => setSearchOpen(true)}
+        >
+          <FiPlus size={26} />
+        </button>
+      )}
 
       <SearchSheet
         open={searchOpen}
@@ -190,6 +267,8 @@ export default function App() {
       />
       <SettingsSheet
         open={settingsOpen}
+        orderModes={orderModes}
+        onOrderModeChange={setOrderMode}
         onClose={() => setSettingsOpen(false)}
         toast={showToast}
       />

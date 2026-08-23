@@ -314,6 +314,60 @@ a {
   text-decoration: line-through;
 }
 
+/* --- sort mode --- */
+
+.sort-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.list li:last-child .sort-row {
+  border-bottom: none;
+}
+
+.sort-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the two arrows sit side by side so a row keeps the height of a single
+   control instead of stacking into a tall block */
+.sort-moves {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.move-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.move-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.move-btn:not(:disabled):active {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 10px var(--glow-faint);
+}
+
 .row-add {
   display: inline-flex;
   align-items: center;
@@ -399,6 +453,7 @@ a {
   margin: 0 auto;
   max-height: 88dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid var(--border);
   border-top-color: var(--accent-dim);
@@ -438,6 +493,17 @@ a {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+}
+
+/* a scrolling sheet keeps its close button reachable. .sheet-full is a
+   non-scrolling flex column whose header is already pinned by flex-shrink. */
+.sheet:not(.sheet-full) .sheet-header {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
+  margin: -1rem -1rem 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+  background: var(--surface);
 }
 
 .sheet-title {
@@ -643,6 +709,15 @@ a {
 
 .settings-hint {
   color: var(--muted);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .settings-actions {
