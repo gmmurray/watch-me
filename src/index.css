@@ -453,6 +453,7 @@ a {
   margin: 0 auto;
   max-height: 88dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid var(--border);
   border-top-color: var(--accent-dim);
@@ -492,6 +493,17 @@ a {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+}
+
+/* a scrolling sheet keeps its close button reachable. .sheet-full is a
+   non-scrolling flex column whose header is already pinned by flex-shrink. */
+.sheet:not(.sheet-full) .sheet-header {
+  position: sticky;
+  top: -1rem;
+  z-index: 1;
+  margin: -1rem -1rem 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+  background: var(--surface);
 }
 
 .sheet-title {
