@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiCheck, FiPlus, FiX } from 'react-icons/fi'
+import Dexie from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { addItem, db, unmarkWatched, type MediaType } from '../db'
 import { formatDate } from '../format'
@@ -23,13 +24,18 @@ export function SearchSheet({ open, mode, onClose, toast }: SearchSheetProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Read only the [mediaType+tmdbId] index keys — no full item records.
   const existingIds = useLiveQuery(async () => {
-    const items = await db.items.toArray()
+    const keys = await db.items
+      .where('[mediaType+tmdbId]')
+      .between([mode, Dexie.minKey], [mode, Dexie.maxKey])
+      .keys()
     return new Set(
-      items.filter((i) => i.mediaType === mode).map((i) => i.tmdbId),
+      keys.map((key) => (key as unknown as [MediaType, number])[1]),
     )
   }, [mode])
 
@@ -38,6 +44,7 @@ export function SearchSheet({ open, mode, onClose, toast }: SearchSheetProps) {
       setQuery('')
       setResults([])
       setStatus('idle')
+      setExpandedId(null)
       inputRef.current?.focus()
     }
   }, [open])
@@ -57,6 +64,7 @@ export function SearchSheet({ open, mode, onClose, toast }: SearchSheetProps) {
       try {
         const found = await searchTmdb(mode, q, controller.signal)
         setResults(found)
+        setExpandedId(null)
         setStatus('idle')
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -136,42 +144,62 @@ export function SearchSheet({ open, mode, onClose, toast }: SearchSheetProps) {
             <p className="sheet-note">Search failed — check your connection.</p>
           )}
           <ul className="list">
-            {results.map((result) => (
-              <li key={result.tmdbId}>
-                <button className="row" onClick={() => void handleAdd(result)}>
-                  {result.posterPath ? (
-                    <img
-                      className="row-poster"
-                      src={posterUrl(result.posterPath, 'w185')!}
-                      alt=""
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="row-poster row-poster-empty">
-                      {result.title[0] ?? '?'}
-                    </div>
-                  )}
-                  <div className="row-main">
-                    <div className="row-title">
-                      {result.title}
-                      {result.year && (
-                        <span className="row-year">{result.year}</span>
+            {results.map((result) => {
+              const expanded = expandedId === result.tmdbId
+              const added = existingIds?.has(result.tmdbId) ?? false
+              return (
+                <li key={result.tmdbId}>
+                  <div
+                    className={
+                      expanded ? 'row row-result row-expanded' : 'row row-result'
+                    }
+                  >
+                    <button
+                      className="row-body"
+                      aria-expanded={expanded}
+                      onClick={() =>
+                        setExpandedId(expanded ? null : result.tmdbId)
+                      }
+                    >
+                      {result.posterPath ? (
+                        <img
+                          className="row-poster"
+                          src={posterUrl(result.posterPath, 'w185')!}
+                          alt=""
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="row-poster row-poster-empty">
+                          {result.title[0] ?? '?'}
+                        </div>
                       )}
-                    </div>
-                    <div className="row-meta row-overview">{result.overview}</div>
+                      <div className="row-main">
+                        <div className="row-title">
+                          {result.title}
+                          {result.year && (
+                            <span className="row-year">{result.year}</span>
+                          )}
+                        </div>
+                        {result.overview && (
+                          <div className="row-meta row-overview">
+                            {result.overview}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                    <button
+                      className={added ? 'row-add row-added' : 'row-add'}
+                      aria-label={
+                        added ? `${result.title} is saved` : `Add ${result.title}`
+                      }
+                      onClick={() => void handleAdd(result)}
+                    >
+                      {added ? <FiCheck size={20} /> : <FiPlus size={20} />}
+                    </button>
                   </div>
-                  {existingIds?.has(result.tmdbId) ? (
-                    <span className="row-add row-added" aria-hidden>
-                      <FiCheck size={20} />
-                    </span>
-                  ) : (
-                    <span className="row-add" aria-hidden>
-                      <FiPlus size={20} />
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
         </>
       )}

@@ -322,6 +322,48 @@ a {
   flex-shrink: 0;
 }
 
+/* search results: the body toggles the full overview, + is a separate target */
+.row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.row-result {
+  padding-right: 0;
+}
+
+.row-result:active {
+  background: none;
+}
+
+.row-body:active {
+  background: var(--surface);
+}
+
+.row-result .row-add {
+  align-self: stretch;
+  padding: 0 0.85rem;
+}
+
+.row-expanded .row-body {
+  align-items: flex-start;
+}
+
+.row-expanded .row-title {
+  white-space: normal;
+}
+
+.row-expanded .row-overview {
+  display: block;
+  -webkit-line-clamp: unset;
+  color: var(--text);
+  line-height: 1.45;
+}
+
 .row-added {
   color: var(--muted);
 }

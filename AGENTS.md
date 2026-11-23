@@ -6,7 +6,7 @@ Personal movie & TV watchlist PWA. Single user, no auth, no backend, all data on
 
 ## What this is (one paragraph)
 
-Two identical flat lists — one for movies, one for TV shows — ordered by date added (oldest first, flippable). Items are added via TMDB search and carry snapshotted metadata. Lightweight freeform tags. Dark "grid glow" (Tron Legacy-inspired) UI: cold blue-black background with a faint grid, amber-orange accent in movie mode, cyan in show mode, accent rendered as light (thin glowing borders and text on focal elements only, angular radii). Items are **crossed off** when watched (kept with a `watchedAt` timestamp in a plain per-mode Watched list), not deleted; ratings/reviews/diary stay on Letterboxd.
+Two identical flat lists — one for movies, one for TV shows — ordered by date added (oldest first), with a short pinned "Up next" group on top. Items are added via TMDB search and carry snapshotted metadata. Lightweight freeform tags, filterable one at a time. Dark "grid glow" (Tron Legacy-inspired) UI: cold blue-black background with a faint grid, amber-orange accent in movie mode, cyan in show mode, accent rendered as light (thin glowing borders and text on focal elements only, angular radii). Items are **crossed off** when watched (kept with a `watchedAt` timestamp in a plain per-mode Watched list), not deleted; ratings/reviews/diary stay on Letterboxd.
 
 ## Stack
 
