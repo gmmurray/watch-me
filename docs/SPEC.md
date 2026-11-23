@@ -9,7 +9,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ## Goals
 
 - Two sections with identical behavior: **Movies** and **Shows**.
-- Each section is a flat list: a short **Up next** group of pinned items at the top, followed by everything else in the order it was added (oldest first).
+- Each section is a flat list: a short **Up next** group of pinned items at the top, followed by everything else in the order it was added (oldest first). A list can be switched to a manual **custom order** instead (see Ordering).
 - Add items by searching TMDB, so entries carry real metadata (title, year, poster) instead of hand-typed text.
 - Lightweight freeform tagging (e.g. tag a show `anime`), filterable by tapping a tag. No tag management UI beyond what's needed to add/remove tags on an item.
 - **Cross items off** when watched rather than deleting them. Watched items are kept with a watched timestamp — effectively a plain list of "what I finished and when." Letterboxd stays the real diary, but this data is free to keep and may be useful later.
@@ -36,7 +36,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 **Aesthetic direction — "grid glow" (Tron Legacy-inspired).** The target is the Grid at night: a cold blue-black world where light is information. Movie mode wears the program amber-orange; show mode wears the hero cyan. Concretely:
 
 - Near-black backgrounds with a cool blue bias (not pure `#000`), carrying a very faint mode-tinted grid pattern and a soft halo at the top of the page.
-- The accent is rendered as *light*, not paint: glowing text for the wordmark, thin accent borders with outer glow as "light lines" on focal elements (the Add button, primary actions, active states). Glow is reserved for a few focal elements; body text, rows, and chips stay quiet so the effect reads as ambiance, not decoration.
+- The accent is rendered as _light_, not paint: glowing text for the wordmark, thin accent borders with outer glow as "light lines" on focal elements (the Add button, primary actions, active states). Glow is reserved for a few focal elements; body text, rows, and chips stay quiet so the effect reads as ambiance, not decoration.
 - Angular shape language: small radii (4–10px) instead of pills — light lines trace edges, they don't balloon.
 - One display font (Orbitron) for the wordmark only; everything else uses a clean system/sans stack.
 - Calibration guardrails: the app must never feel like a template with default grays (failure mode A), and never accumulate gradients, animations, and effects that feel like overkill for a flat list (failure mode B). If an effect doesn't survive the question "does this make the list nicer to glance at on a phone at night," cut it.
@@ -89,17 +89,17 @@ Single Dexie (IndexedDB) table:
 
 ```ts
 interface WatchItem {
-  id?: number;          // auto-increment primary key
-  mediaType: 'movie' | 'show';
+  id?: number; // auto-increment primary key
+  mediaType: "movie" | "show";
   tmdbId: number;
   title: string;
-  year: string | null;      // release/first-air year, display only
+  year: string | null; // release/first-air year, display only
   posterPath: string | null; // TMDB poster path, e.g. "/abc123.jpg"
   overview: string;
   tags: string[];
-  addedAt: number;          // epoch ms
+  addedAt: number; // epoch ms
   watchedAt: number | null; // epoch ms; null = still on the to-watch list
-  pinnedAt: number | null;  // epoch ms; non-null = in Up next. Always null when watched.
+  pinnedAt: number | null; // epoch ms; non-null = in Up next. Always null when watched.
 }
 ```
 
@@ -112,10 +112,10 @@ interface WatchItem {
 
 ## Persistence and data safety
 
-This is the "phone deletes my data after a month" concern — and on iOS it is a *justified* concern, not paranoia. Every browser on iOS, including Chrome, is WebKit underneath, and WebKit is the most eviction-happy engine there is (its Intelligent Tracking Prevention can delete a site's script-writable storage — including IndexedDB — after ~7 days without visiting it). The strategy, in order of importance:
+This is the "phone deletes my data after a month" concern — and on iOS it is a _justified_ concern, not paranoia. Every browser on iOS, including Chrome, is WebKit underneath, and WebKit is the most eviction-happy engine there is (its Intelligent Tracking Prevention can delete a site's script-writable storage — including IndexedDB — after ~7 days without visiting it). The strategy, in order of importance:
 
 1. **Install to the Home Screen and use only the installed app.** Home Screen web apps get their own dedicated storage container and are exempt from the 7-day cleanup — this is the single biggest protection on iOS. Two sharp edges to design around:
-   - The installed app's storage is *separate* from the browser tab's. Anything added while browsing in Chrome does not appear in the installed app. The app should detect non-standalone display mode and show a persistent, friendly banner: "Install me and use me from your Home Screen — data added here won't carry over."
+   - The installed app's storage is _separate_ from the browser tab's. Anything added while browsing in Chrome does not appear in the installed app. The app should detect non-standalone display mode and show a persistent, friendly banner: "Install me and use me from your Home Screen — data added here won't carry over."
    - iOS has no `beforeinstallprompt`; installation is manual (Chrome on iOS ≥16.4 supports Add to Home Screen from its menu). The banner explains the steps rather than triggering a prompt.
 2. **Request `navigator.storage.persist()`** on first launch anyway. WebKit supports it; treat it as an extra lock rather than the plan. Surface the result quietly on the settings/about screen.
 3. **Export/import is the real guarantee.** A settings action exports the full database (both lists, watched history, tags) as a JSON file; import restores it, merging by `mediaType+tmdbId` — keep the older `addedAt`, keep a non-null `watchedAt` over null, union tags, and keep the earliest non-null `pinnedAt` (forced to null if the merged item is watched). `pinnedAt` is an additive, optional field in the backup format: files without it import as unpinned, so older backups stay valid and the format version stays 1. Add a gentle nudge on the settings screen ("last export: 43 days ago") so backups actually happen. An occasional export saved to Files/Drive makes the data effectively loss-proof.

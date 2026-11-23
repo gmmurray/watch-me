@@ -14,6 +14,7 @@ function item(overrides: Partial<Omit<WatchItem, 'id'>> = {}): Omit<WatchItem, '
     tags: [],
     addedAt: 100,
     watchedAt: null,
+    order: 100,
     ...overrides,
   }
 }
@@ -44,6 +45,45 @@ describe('export/import round trip', () => {
     expect(restored).toHaveLength(2)
     expect(restored.find((r) => r.tmdbId === 1)?.tags).toEqual(['anime'])
     expect(restored.find((r) => r.tmdbId === 2)?.watchedAt).toBe(500)
+  })
+})
+
+describe('order in backups', () => {
+  it('round-trips the custom order', async () => {
+    await db.items.bulkAdd([item({ tmdbId: 1, order: 3 }), item({ tmdbId: 2, order: 0 })])
+    const backup = await exportData()
+    expect(backup.version).toBe(2)
+    await db.items.clear()
+
+    await importData(backup)
+    const restored = await db.items.toArray()
+    expect(restored.find((r) => r.tmdbId === 1)?.order).toBe(3)
+    expect(restored.find((r) => r.tmdbId === 2)?.order).toBe(0)
+  })
+
+  it('falls back to addedAt for v1 backups, which have no order', async () => {
+    const { order: _order, ...v1Item } = item({ addedAt: 250 })
+    const result = await importData({
+      app: 'watch-me',
+      version: 1,
+      exportedAt: 0,
+      items: [v1Item],
+    })
+    expect(result).toEqual({ added: 1, merged: 0 })
+    const [imported] = await db.items.toArray()
+    expect(imported.order).toBe(250)
+  })
+
+  it('keeps this device arrangement when merging', async () => {
+    await db.items.add(item({ order: 5 }))
+    await importData({
+      app: 'watch-me',
+      version: 2,
+      exportedAt: 0,
+      items: [item({ order: 99 })],
+    })
+    const [merged] = await db.items.toArray()
+    expect(merged.order).toBe(5)
   })
 })
 

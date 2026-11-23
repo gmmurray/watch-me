@@ -1,23 +1,26 @@
 import { db, type WatchItem } from './db'
 
+/** `order` is absent in v1 backups, written since v2. */
+export type BackupItem = Omit<WatchItem, 'id' | 'order'> & { order?: number }
+
 export interface BackupFile {
   app: 'watch-me'
-  version: 1
+  version: 1 | 2
   exportedAt: number
-  items: Omit<WatchItem, 'id'>[]
+  items: BackupItem[]
 }
 
 export async function exportData(): Promise<BackupFile> {
   const items = await db.items.toArray()
   return {
     app: 'watch-me',
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     items: items.map(({ id: _id, ...rest }) => rest),
   }
 }
 
-function isBackupItem(value: unknown): value is Omit<WatchItem, 'id'> {
+function isBackupItem(value: unknown): value is BackupItem {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
   return (
@@ -26,6 +29,7 @@ function isBackupItem(value: unknown): value is Omit<WatchItem, 'id'> {
     typeof v.title === 'string' &&
     typeof v.addedAt === 'number' &&
     (v.watchedAt === null || typeof v.watchedAt === 'number') &&
+    (v.order === undefined || typeof v.order === 'number') &&
     Array.isArray(v.tags)
   )
 }
@@ -48,7 +52,9 @@ export function parseBackup(data: unknown): BackupFile {
  * Merge a backup into the database. Matching is by mediaType+tmdbId:
  * keep the older addedAt, keep a non-null watchedAt over null (existing
  * wins when both are set), union tags. Snapshot metadata of existing
- * items is left untouched.
+ * items is left untouched, and so is their custom order position — this
+ * device's arrangement wins. Incoming items without an order (v1 backups)
+ * fall back to addedAt, matching how the v2 migration seeded it.
  */
 export async function importData(
   data: unknown,
@@ -65,7 +71,11 @@ export async function importData(
         .first()
 
       if (!existing) {
-        await db.items.add({ ...incoming, tags: [...incoming.tags] })
+        await db.items.add({
+          ...incoming,
+          order: incoming.order ?? incoming.addedAt,
+          tags: [...incoming.tags],
+        })
         added++
       } else {
         await db.items.update(existing.id, {
