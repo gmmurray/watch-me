@@ -195,6 +195,14 @@ a {
   transition: color 200ms ease, box-shadow 300ms ease, border-color 200ms ease;
 }
 
+.pill-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
 .pill.active {
   color: var(--text);
   border-color: var(--accent-dim);
@@ -406,6 +414,34 @@ a {
   background: var(--surface);
   color: var(--muted);
   font-size: 0.72rem;
+}
+
+.tag-active {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+/* list rows: the title button's tap area covers the whole row, and the tag
+   buttons sit above it so they can be tapped on their own */
+.row-item {
+  position: relative;
+}
+
+.row-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.row-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.row-item .tag {
+  position: relative;
+  z-index: 1;
 }
 
 /* --- empty state --- */

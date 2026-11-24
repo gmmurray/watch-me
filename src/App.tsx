@@ -30,6 +30,7 @@ export default function App() {
   // Non-null while the list is being rearranged: a staged copy that only
   // reaches the database on Save.
   const [draft, setDraft] = useState<WatchItem[] | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function App() {
     setMode(next);
     setView("queue");
     setDraft(null);
+    setTagFilter(null);
     setDetailOpen(false);
     setSearchOpen(false);
   }
@@ -85,7 +87,10 @@ export default function App() {
   const queue = useLiveQuery(() => listToWatch(mode), [mode]);
   const watched = useLiveQuery(() => listWatched(mode), [mode]);
 
-  const items = (view === "queue" ? queue : watched) ?? [];
+  const listed = (view === "queue" ? queue : watched) ?? [];
+  const items = tagFilter
+    ? listed.filter((item) => item.tags.includes(tagFilter))
+    : listed;
 
   const sorting = draft !== null;
   const noun = mode === "movie" ? "movies" : "shows";
@@ -144,7 +149,18 @@ export default function App() {
             Watched{watched?.length ? ` · ${watched.length}` : ""}
           </button>
         )}
+        {tagFilter && (
+          <button
+            className="pill pill-filter"
+            aria-label={`Clear tag filter ${tagFilter}`}
+            onClick={() => setTagFilter(null)}
+          >
+            {tagFilter}
+            <FiX size={13} />
+          </button>
+        )}
         {view === "queue" &&
+          !tagFilter &&
           (sorting ? (
             <>
               <button
@@ -171,7 +187,9 @@ export default function App() {
           <ReorderList items={draft} onMove={moveDraft} />
         ) : items.length === 0 ? (
           <div className="empty">
-            {view === "queue" ? (
+            {tagFilter ? (
+              <p>Nothing tagged “{tagFilter}” here.</p>
+            ) : view === "queue" ? (
               <p>Nothing on the grid yet — add some {noun}.</p>
             ) : (
               <p>Nothing crossed off yet.</p>
@@ -180,6 +198,8 @@ export default function App() {
         ) : (
           <ItemList
             items={items}
+            activeTag={tagFilter}
+            onTag={(tag) => setTagFilter(tag === tagFilter ? null : tag)}
             onSelect={(item) => {
               setDetailId(item.id);
               setDetailOpen(true);

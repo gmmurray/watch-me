@@ -5,6 +5,8 @@ import { posterUrl } from '../tmdb'
 interface ItemListProps {
   items: WatchItem[]
   onSelect: (item: WatchItem) => void
+  activeTag: string | null
+  onTag: (tag: string) => void
 }
 
 function Poster({ item }: { item: WatchItem }) {
@@ -15,23 +17,22 @@ function Poster({ item }: { item: WatchItem }) {
   return <img className="row-poster" src={url} alt="" loading="lazy" />
 }
 
-export function ItemList({ items, onSelect }: ItemListProps) {
+// The title button's tap area is stretched over the whole row (see .row-open),
+// so the tag buttons can sit on top of it instead of nesting inside a button.
+export function ItemList({ items, onSelect, activeTag, onTag }: ItemListProps) {
   return (
     <ul className="list">
       {items.map((item) => {
         const watched = item.watchedAt !== null
         return (
           <li key={item.id}>
-            <button
-              className={watched ? 'row row-watched' : 'row'}
-              onClick={() => onSelect(item)}
-            >
+            <div className={watched ? 'row row-item row-watched' : 'row row-item'}>
               <Poster item={item} />
               <div className="row-main">
-                <div className="row-title">
+                <button className="row-title row-open" onClick={() => onSelect(item)}>
                   {item.title}
                   {item.year && <span className="row-year">{item.year}</span>}
-                </div>
+                </button>
                 <div className="row-meta">
                   <span>
                     {watched
@@ -39,13 +40,18 @@ export function ItemList({ items, onSelect }: ItemListProps) {
                       : `added ${formatDate(item.addedAt)}`}
                   </span>
                   {item.tags.map((tag) => (
-                    <span key={tag} className="tag">
+                    <button
+                      key={tag}
+                      className={tag === activeTag ? 'tag tag-active' : 'tag'}
+                      aria-pressed={tag === activeTag}
+                      onClick={() => onTag(tag)}
+                    >
                       {tag}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
-            </button>
+            </div>
           </li>
         )
       })}
