@@ -9,7 +9,7 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ## Goals
 
 - Two sections with identical behavior: **Movies** and **Shows**.
-- Each section is a flat list: a short **Up next** group of pinned items at the top, followed by everything else in the order it was added (oldest first). A list can be switched to a manual **custom order** instead (see Ordering).
+- Each section is a flat list with one order. By default that's the order items were added (oldest first); you can bump an item to the top in one tap, or rearrange the list by hand (see Ordering).
 - Add items by searching TMDB, so entries carry real metadata (title, year, poster) instead of hand-typed text.
 - Lightweight freeform tagging (e.g. tag a show `anime`), filterable by tapping a tag. No tag management UI beyond what's needed to add/remove tags on an item.
 - **Cross items off** when watched rather than deleting them. Watched items are kept with a watched timestamp — effectively a plain list of "what I finished and when." Letterboxd stays the real diary, but this data is free to keep and may be useful later.
@@ -19,8 +19,8 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ## Non-goals (for now)
 
 - No diary, ratings, or reviews — that's Letterboxd. watch-me keeps only the bare "crossed off on this date" record, with no ambition beyond that for now.
-- No additional views, filtering, or sorting beyond Up next pinning and a single-tag filter. No sort controls at all — date added is the only order.
-- No manual drag-to-reorder. Pinning covers "I want to watch this soon"; ordering the whole list by hand is not worth the complexity (or the iOS drag-and-drop pain).
+- No additional views, filtering, or sorting beyond the single-tag filter. There is exactly one order per list — no order modes, no Oldest/Newest flip, no sorting by title, year, or anything else.
+- No drag-and-drop. Rearranging uses plain up/down arrows (see Ordering); a drag library is a lot of machinery for a list that gets reordered occasionally, and iOS drag handling is a pain.
 - No sync across devices, no accounts, no backend.
 - No episode-level tracking for shows. A show is a single list entry.
 
@@ -44,22 +44,27 @@ The owner tracks watched movies on Letterboxd and wants to keep it that way. Wha
 ### The list
 
 - One vertical list per mode. Each row shows: poster thumbnail, title, year, tags, and the date added.
-- Order: pinned items first (**Up next**, in the order they were pinned), then all other items oldest-added first. There is no sort toggle.
-- Tapping a row opens a small detail panel/sheet: larger poster, overview from TMDB, tags (editable), date added, and three actions: **Mark watched** (the primary action — crosses it off), **Pin to Up next / Unpin** (secondary), and **Remove** (for "changed my mind, never watching this"; hard delete).
-- Mark watched and Remove get a brief undo affordance (toast). Pinning is trivially reversible and needs none.
+- Order: see Ordering below. Top of the list = what to watch next.
+- Tapping a row opens a small detail panel/sheet: larger poster, overview from TMDB, tags (editable), date added, and three actions: **Mark watched** (the primary action — crosses it off), **Move to top** (secondary; hidden when the item is already first), and **Remove** (for "changed my mind, never watching this"; hard delete).
+- All three actions get a brief undo affordance (toast).
 
-### Up next (pinning)
+### Ordering
 
-- Pinning is how priority is expressed. It is intentionally a binary flag, not a ranking: an item is either "up next" or it isn't.
-- Pinned items sit at the top of the to-watch list, oldest-pinned first, set apart by a quiet treatment (a thin accent light line on the row edge — not a full glow) and a small "Up next" divider above the rest of the list. No divider when nothing is pinned.
-- Crossing an item off clears its pin. Restoring it from Watched returns it unpinned.
-- The Up next group is expected to stay short (a handful of items). Nothing enforces a limit.
+Each to-watch list has a single order, stored on the items themselves. Untouched, it is simply oldest-added first: new items are appended to the bottom. Two ways to change it:
+
+- **Move to top** (detail sheet) — the everyday "I want to watch this next" action. One tap puts the item above everything else in the list. Bumping several items stacks them, most recently bumped on top.
+- **Sort** (button in the controls row, shown when the list has more than one item) — for occasional bigger rearranging. It puts the list into *sort mode*:
+  - Rows collapse to title-only, with a pair of up/down arrow buttons side by side on the right (one vertical band, not stacked). The first row's up and the last row's down are disabled.
+  - Rows are not tappable — no detail sheet, no adding while rearranging.
+  - Moves are staged, not live. The Sort button becomes **Save** and commits the arrangement; a quiet Cancel discards it. Leaving the list (switching mode, or opening the Watched list) also discards a pending arrangement.
+
+The position lives on the item rather than in a separate list of ids, so it rides along in export/import, and an item that is crossed off and later un-crossed returns to the slot it had.
 
 ### Tag filter
 
 - Tapping a tag chip on a list row filters the current list (to-watch or Watched) to items with that tag. The active filter shows as a single dismissible chip in the controls row; tapping it (or the same tag again) clears it.
 - One tag at a time — no multi-tag logic. The filter is not persisted; it resets on mode switch and on relaunch.
-- Pinned items still sort first within a filtered to-watch list.
+- A filtered list keeps the list's order; Sort is hidden while a filter is active (rearranging a subset would be confusing).
 
 ### Watched items
 
@@ -99,16 +104,19 @@ interface WatchItem {
   tags: string[];
   addedAt: number; // epoch ms
   watchedAt: number | null; // epoch ms; null = still on the to-watch list
-  pinnedAt: number | null; // epoch ms; non-null = in Up next. Always null when watched.
+  order: number; // to-watch position, ascending; seeded from addedAt
 }
 ```
 
-- `pinnedAt` was added in schema version 2 via a Dexie `upgrade()` that sets it to `null` on existing rows. It is not indexed — pinned items are few and sorted in memory.
-
-- Indexes: `[mediaType+addedAt]` for the to-watch query, `[mediaType+watchedAt]` for the watched list, `[mediaType+tmdbId]` (unique) for duplicate prevention. (Filtering `watchedAt === null` happens in the query; the list sizes involved make index subtleties irrelevant.)
+- Schema history: v1 is the original table. v2 added `order` and the `[mediaType+order]` index, seeding `order = addedAt` on existing rows so the list looked unchanged.
+- Indexes: `[mediaType+order]` for the to-watch query, `[mediaType+watchedAt]` for the watched list, `[mediaType+tmdbId]` (unique) for duplicate prevention. `[mediaType+addedAt]` is no longer queried; it's left in place rather than spending a schema version to drop it. (Filtering `watchedAt === null` happens in the query; the list sizes involved make index subtleties irrelevant.)
+- `order` values (per `mediaType`, across to-watch and watched items):
+  - New items take `max(order) + 1` — the bottom.
+  - Move to top sets `order = min(order) - 1`. Values can go negative; that's fine.
+  - Saving a Sort arrangement rewrites the to-watch list as dense `0..n-1` in one bulk update. The lists are small enough that anything cleverer (fractional keys, gap indices) would be wasted complexity.
 - Re-adding a title that's already in the Watched list should surface it ("you watched this on …") and offer to move it back to the to-watch list rather than creating a duplicate.
 - TMDB metadata is snapshotted at add time; no background refresh. Poster images are loaded from TMDB's CDN at render time (and cached by the service worker).
-- Settings (last mode) live in `localStorage` — trivial and non-critical. The old per-mode sort direction key is no longer read.
+- Settings (last mode) live in `localStorage` — trivial and non-critical. The order is data, not a setting, and lives in the database. The retired per-mode sort-direction and order-mode keys (`watch-me:sort:*`, `watch-me:order:*`) are no longer read.
 
 ## Persistence and data safety
 
@@ -118,7 +126,7 @@ This is the "phone deletes my data after a month" concern — and on iOS it is a
    - The installed app's storage is _separate_ from the browser tab's. Anything added while browsing in Chrome does not appear in the installed app. The app should detect non-standalone display mode and show a persistent, friendly banner: "Install me and use me from your Home Screen — data added here won't carry over."
    - iOS has no `beforeinstallprompt`; installation is manual (Chrome on iOS ≥16.4 supports Add to Home Screen from its menu). The banner explains the steps rather than triggering a prompt.
 2. **Request `navigator.storage.persist()`** on first launch anyway. WebKit supports it; treat it as an extra lock rather than the plan. Surface the result quietly on the settings/about screen.
-3. **Export/import is the real guarantee.** A settings action exports the full database (both lists, watched history, tags) as a JSON file; import restores it, merging by `mediaType+tmdbId` — keep the older `addedAt`, keep a non-null `watchedAt` over null, union tags, and keep the earliest non-null `pinnedAt` (forced to null if the merged item is watched). `pinnedAt` is an additive, optional field in the backup format: files without it import as unpinned, so older backups stay valid and the format version stays 1. Add a gentle nudge on the settings screen ("last export: 43 days ago") so backups actually happen. An occasional export saved to Files/Drive makes the data effectively loss-proof.
+3. **Export/import is the real guarantee.** A settings action exports the full database (both lists, watched history, tags) as a JSON file; import restores it, merging by `mediaType+tmdbId` — keep the older `addedAt`, keep a non-null `watchedAt` over null, and union tags. For `order`, this device's arrangement wins on a merge; newly added items keep their backup `order`. The backup format is version 2 (adds `order`); version 1 files still import, with `order` falling back to `addedAt` to match the v2 migration. Add a gentle nudge on the settings screen ("last export: 43 days ago") so backups actually happen. An occasional export saved to Files/Drive makes the data effectively loss-proof.
 
 ## TMDB integration
 

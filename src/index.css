@@ -201,29 +201,6 @@ a {
   box-shadow: 0 0 10px var(--glow-faint);
 }
 
-.seg {
-  display: flex;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-}
-
-/* quiet utility toggle: neutral fill, no accent — the accent belongs to
-   mode-level controls (tabs, watched pill), not list plumbing */
-.seg-btn {
-  padding: 0.25rem 0.8rem;
-  border-radius: 4px;
-  color: var(--muted);
-  font-size: 0.85rem;
-  transition: color 200ms ease, background 200ms ease;
-}
-
-.seg-btn.active {
-  color: var(--text);
-  background: var(--border);
-}
-
 /* --- item list --- */
 
 .list {
@@ -651,6 +628,7 @@ a {
 
 .detail-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
 }
@@ -751,15 +729,6 @@ a {
 
 .settings-hint {
   color: var(--muted);
-}
-
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
 }
 
 .settings-actions {

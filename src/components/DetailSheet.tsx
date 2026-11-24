@@ -3,7 +3,9 @@ import { FiX } from 'react-icons/fi'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   db,
+  listToWatch,
   markWatched,
+  moveToTop,
   removeItem,
   unmarkWatched,
   type WatchItem,
@@ -97,6 +99,12 @@ export function DetailSheet({ open, itemId, onClose, toast }: DetailSheetProps) 
   const lastItem = useRef<WatchItem | undefined>(undefined)
   if (live) lastItem.current = live
   const item = live ?? lastItem.current
+  const mediaType = item?.mediaType
+  const topId = useLiveQuery(
+    async () =>
+      mediaType ? (await listToWatch(mediaType))[0]?.id : undefined,
+    [mediaType],
+  )
   if (!item) return null
 
   const watched = item.watchedAt !== null
@@ -108,6 +116,16 @@ export function DetailSheet({ open, itemId, onClose, toast }: DetailSheetProps) 
     toast(`Crossed off “${item!.title}”`, {
       label: 'Undo',
       run: () => void unmarkWatched(item!.id),
+    })
+  }
+
+  async function handleMoveToTop() {
+    const { id, order, title } = item!
+    await moveToTop(item!)
+    onClose()
+    toast(`Moved “${title}” to the top`, {
+      label: 'Undo',
+      run: () => void db.items.update(id, { order }),
     })
   }
 
@@ -148,9 +166,22 @@ export function DetailSheet({ open, itemId, onClose, toast }: DetailSheetProps) 
               Back on the list
             </button>
           ) : (
-            <button className="btn-primary" onClick={() => void handleCrossOff()}>
-              Cross it off
-            </button>
+            <>
+              <button
+                className="btn-primary"
+                onClick={() => void handleCrossOff()}
+              >
+                Cross it off
+              </button>
+              {topId !== item.id && (
+                <button
+                  className="btn-quiet"
+                  onClick={() => void handleMoveToTop()}
+                >
+                  Move to top
+                </button>
+              )}
+            </>
           )}
           <button className="btn-quiet" onClick={() => void handleRemove()}>
             Remove

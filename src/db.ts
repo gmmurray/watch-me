@@ -2,9 +2,6 @@ import Dexie, { type EntityTable } from 'dexie'
 
 export type MediaType = 'movie' | 'show'
 
-/** How a to-watch list is ordered. Chosen per mediaType, kept in localStorage. */
-export type OrderMode = 'added' | 'custom'
-
 export interface WatchItem {
   id: number
   mediaType: MediaType
@@ -16,7 +13,7 @@ export interface WatchItem {
   tags: string[]
   addedAt: number
   watchedAt: number | null
-  /** Sort key for custom order mode. Seeded from addedAt. */
+  /** To-watch position, ascending. Seeded from addedAt. */
   order: number
 }
 
@@ -30,9 +27,9 @@ db.version(1).stores({
   items: '++id, [mediaType+addedAt], [mediaType+watchedAt], &[mediaType+tmdbId]',
 })
 
-// v2 adds the custom order key. Seeding it from addedAt means a list switched
-// to custom order for the first time looks exactly like the oldest-first list
-// it was already showing.
+// v2 adds the order key. Seeding it from addedAt keeps existing lists in the
+// oldest-first order they already had. [mediaType+addedAt] is no longer
+// queried but stays rather than spending a schema version to drop it.
 db.version(2)
   .stores({
     items:
@@ -53,12 +50,8 @@ function byMediaType(index: string, mediaType: MediaType) {
     .between([mediaType, Dexie.minKey], [mediaType, Dexie.maxKey])
 }
 
-export function listToWatch(
-  mediaType: MediaType,
-  orderMode: OrderMode = 'added',
-): Promise<WatchItem[]> {
-  const index = orderMode === 'custom' ? '[mediaType+order]' : '[mediaType+addedAt]'
-  return byMediaType(index, mediaType)
+export function listToWatch(mediaType: MediaType): Promise<WatchItem[]> {
+  return byMediaType('[mediaType+order]', mediaType)
     .filter((item) => item.watchedAt === null)
     .toArray()
 }
@@ -70,7 +63,7 @@ export function listWatched(mediaType: MediaType): Promise<WatchItem[]> {
 export function addItem(
   item: Omit<WatchItem, 'id' | 'addedAt' | 'watchedAt' | 'order'>,
 ): Promise<number> {
-  // New items land at the bottom of the custom order.
+  // New items land at the bottom of the list.
   return db.transaction('rw', db.items, async () => {
     const last = await byMediaType('[mediaType+order]', item.mediaType).last()
     return db.items.add({
@@ -82,8 +75,16 @@ export function addItem(
   })
 }
 
+/** Put an item above everything else in its list. */
+export function moveToTop(item: WatchItem): Promise<number> {
+  return db.transaction('rw', db.items, async () => {
+    const first = await byMediaType('[mediaType+order]', item.mediaType).first()
+    return db.items.update(item.id, { order: (first?.order ?? 0) - 1 })
+  })
+}
+
 /**
- * Commit a rearranged custom order: ids in their new top-to-bottom order,
+ * Commit a rearranged list: ids in their new top-to-bottom order,
  * rewritten as dense 0..n-1. Ids that no longer exist are skipped.
  */
 export function saveOrder(ids: number[]): Promise<unknown> {

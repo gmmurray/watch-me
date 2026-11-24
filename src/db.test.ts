@@ -6,6 +6,7 @@ import {
   listToWatch,
   listWatched,
   markWatched,
+  moveToTop,
   saveOrder,
   unmarkWatched,
   type WatchItem,
@@ -27,7 +28,7 @@ function fixture(overrides: Partial<WatchItem> = {}) {
 beforeEach(() => db.items.clear())
 
 describe('to-watch list', () => {
-  it('orders by addedAt, oldest first, scoped to mediaType', async () => {
+  it('starts oldest-added first, scoped to mediaType', async () => {
     await db.items.bulkAdd([
       {
         ...fixture({ tmdbId: 1, title: 'second' }),
@@ -65,7 +66,7 @@ describe('to-watch list', () => {
   })
 })
 
-describe('custom order', () => {
+describe('order', () => {
   async function seed() {
     await db.items.bulkAdd([
       { ...fixture({ tmdbId: 1, title: 'a' }), addedAt: 100, watchedAt: null, order: 2 },
@@ -76,15 +77,10 @@ describe('custom order', () => {
 
   it('orders by the order key, independently of addedAt', async () => {
     await seed()
-    expect((await listToWatch('movie', 'custom')).map((i) => i.title)).toEqual([
+    expect((await listToWatch('movie')).map((i) => i.title)).toEqual([
       'b',
       'c',
       'a',
-    ])
-    expect((await listToWatch('movie', 'added')).map((i) => i.title)).toEqual([
-      'a',
-      'b',
-      'c',
     ])
   })
 
@@ -92,7 +88,7 @@ describe('custom order', () => {
     await seed()
     const id = await addItem(fixture({ tmdbId: 4, title: 'd' }))
     expect((await db.items.get(id))?.order).toBe(3)
-    expect((await listToWatch('movie', 'custom')).map((i) => i.title)).toEqual([
+    expect((await listToWatch('movie')).map((i) => i.title)).toEqual([
       'b',
       'c',
       'a',
@@ -103,23 +99,41 @@ describe('custom order', () => {
     expect((await db.items.get(showId))?.order).toBe(0)
   })
 
+  it('moves an item to the top, per mediaType', async () => {
+    await seed()
+    await db.items.add({
+      ...fixture({ mediaType: 'show', tmdbId: 9 }),
+      addedAt: 1,
+      watchedAt: null,
+      order: -50,
+    })
+    const [, , last] = await listToWatch('movie')
+    await moveToTop(last)
+    expect((await listToWatch('movie')).map((i) => i.title)).toEqual([
+      'a',
+      'b',
+      'c',
+    ])
+    expect((await db.items.get(last.id))?.order).toBe(-1)
+  })
+
   it('rewrites the order densely on save and ignores stale ids', async () => {
     await seed()
-    const current = await listToWatch('movie', 'custom')
+    const current = await listToWatch('movie')
     const reversed = [...current].reverse()
     await saveOrder([...reversed.map((i) => i.id), 9999])
 
-    const saved = await listToWatch('movie', 'custom')
+    const saved = await listToWatch('movie')
     expect(saved.map((i) => i.title)).toEqual(['a', 'c', 'b'])
     expect(saved.map((i) => i.order)).toEqual([0, 1, 2])
   })
 
   it('returns an un-crossed-off item to its old slot', async () => {
     await seed()
-    const [, middle] = await listToWatch('movie', 'custom')
+    const [, middle] = await listToWatch('movie')
     await markWatched(middle.id)
     await unmarkWatched(middle.id)
-    expect((await listToWatch('movie', 'custom')).map((i) => i.title)).toEqual([
+    expect((await listToWatch('movie')).map((i) => i.title)).toEqual([
       'b',
       'c',
       'a',

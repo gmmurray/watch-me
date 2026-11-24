@@ -6,7 +6,6 @@ import {
   listWatched,
   saveOrder,
   type MediaType,
-  type OrderMode,
   type WatchItem,
 } from "./db";
 import type { ToastAction, ToastState } from "./toast";
@@ -18,34 +17,16 @@ import { SettingsSheet } from "./components/SettingsSheet";
 import { isStandalone } from "./platform";
 
 const MODE_KEY = "watch-me:mode";
-const SORT_KEY = (mode: MediaType) => `watch-me:sort:${mode}`;
-const ORDER_KEY = (mode: MediaType) => `watch-me:order:${mode}`;
 
 type View = "queue" | "watched";
-type SortDir = "asc" | "desc";
 
 function loadMode(): MediaType {
   return localStorage.getItem(MODE_KEY) === "show" ? "show" : "movie";
 }
 
-function loadSort(mode: MediaType): SortDir {
-  return localStorage.getItem(SORT_KEY(mode)) === "desc" ? "desc" : "asc";
-}
-
-function loadOrderMode(mode: MediaType): OrderMode {
-  return localStorage.getItem(ORDER_KEY(mode)) === "custom" ? "custom" : "added";
-}
-
-function loadOrderModes(): Record<MediaType, OrderMode> {
-  return { movie: loadOrderMode("movie"), show: loadOrderMode("show") };
-}
-
 export default function App() {
   const [mode, setMode] = useState<MediaType>(loadMode);
   const [view, setView] = useState<View>("queue");
-  const [sort, setSort] = useState<SortDir>(() => loadSort(loadMode()));
-  const [orderModes, setOrderModes] =
-    useState<Record<MediaType, OrderMode>>(loadOrderModes);
   // Non-null while the list is being rearranged: a staged copy that only
   // reaches the database on Save.
   const [draft, setDraft] = useState<WatchItem[] | null>(null);
@@ -67,21 +48,9 @@ export default function App() {
   function switchMode(next: MediaType) {
     setMode(next);
     setView("queue");
-    setSort(loadSort(next));
     setDraft(null);
     setDetailOpen(false);
     setSearchOpen(false);
-  }
-
-  function setSortDir(next: SortDir) {
-    setSort(next);
-    localStorage.setItem(SORT_KEY(mode), next);
-  }
-
-  function setOrderMode(target: MediaType, next: OrderMode) {
-    localStorage.setItem(ORDER_KEY(target), next);
-    setOrderModes((current) => ({ ...current, [target]: next }));
-    if (target === mode) setDraft(null);
   }
 
   function moveDraft(index: number, direction: MoveDirection) {
@@ -113,19 +82,10 @@ export default function App() {
     setInstallNudgeDismissed(true);
   }
 
-  const orderMode = orderModes[mode];
-  const queue = useLiveQuery(
-    () => listToWatch(mode, orderMode),
-    [mode, orderMode],
-  );
+  const queue = useLiveQuery(() => listToWatch(mode), [mode]);
   const watched = useLiveQuery(() => listWatched(mode), [mode]);
 
-  const items =
-    view === "queue"
-      ? sort === "desc" && orderMode === "added"
-        ? [...(queue ?? [])].reverse()
-        : (queue ?? [])
-      : (watched ?? []);
+  const items = (view === "queue" ? queue : watched) ?? [];
 
   const sorting = draft !== null;
   const noun = mode === "movie" ? "movies" : "shows";
@@ -185,22 +145,7 @@ export default function App() {
           </button>
         )}
         {view === "queue" &&
-          (orderMode === "added" ? (
-            <div className="seg" role="group" aria-label="Sort order">
-              <button
-                className={sort === "asc" ? "seg-btn active" : "seg-btn"}
-                onClick={() => setSortDir("asc")}
-              >
-                Oldest
-              </button>
-              <button
-                className={sort === "desc" ? "seg-btn active" : "seg-btn"}
-                onClick={() => setSortDir("desc")}
-              >
-                Newest
-              </button>
-            </div>
-          ) : sorting ? (
+          (sorting ? (
             <>
               <button
                 className="pill active"
@@ -267,8 +212,6 @@ export default function App() {
       />
       <SettingsSheet
         open={settingsOpen}
-        orderModes={orderModes}
-        onOrderModeChange={setOrderMode}
         onClose={() => setSettingsOpen(false)}
         toast={showToast}
       />
